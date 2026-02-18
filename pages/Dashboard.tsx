@@ -23,8 +23,15 @@ const SAMPLE_ROOMS = [
   { url: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=400&q=80', label: 'Urban Study' }
 ];
 
+const ATMOSPHERES = [
+  'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1615529328331-f8917597711f?auto=format&fit=crop&w=1920&q=80',
+];
+
 const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
   const [image, setImage] = useState<string | null>(null);
+  const [studioBg, setStudioBg] = useState<string>(ATMOSPHERES[0]);
   const [roomType, setRoomType] = useState<RoomType>(RoomType.LIVING_ROOM);
   const [style, setStyle] = useState<DesignStyle>(DesignStyle.MODERN);
   const [lighting, setLighting] = useState<LightingType>(LightingType.NATURAL);
@@ -54,6 +61,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => setImage(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setStudioBg(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -122,8 +138,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
   };
 
   return (
-    <div className="pt-32 min-h-screen bg-[#0A0A0A] text-white">
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-12">
+    <div 
+      className="pt-32 min-h-screen bg-[#0A0A0A] text-white relative transition-all duration-1000 overflow-x-hidden"
+      style={{
+        backgroundImage: `url('${studioBg}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      {/* Immersive Overlay */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-xl z-0"></div>
+
+      {/* Studio Controls Floating Menu */}
+      {!isGenerating && (
+        <div className="fixed bottom-8 left-8 z-50 flex flex-col gap-4 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-3xl shadow-2xl flex flex-col gap-3">
+            <span className="text-[7px] font-bold uppercase tracking-[0.4em] text-gold text-center mb-1">Atmosphere</span>
+            <div className="flex gap-2">
+              {ATMOSPHERES.map((url, i) => (
+                <button 
+                  key={i} 
+                  onClick={() => setStudioBg(url)}
+                  className={`w-8 h-8 rounded-full border-2 transition-all ${studioBg === url ? 'border-gold scale-110' : 'border-white/10'}`}
+                  style={{ backgroundImage: `url('${url}')`, backgroundSize: 'cover' }}
+                />
+              ))}
+              <label className="w-8 h-8 rounded-full border-2 border-white/10 flex items-center justify-center bg-white/5 cursor-pointer hover:border-white/30 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                <input type="file" className="hidden" accept="image/*" onChange={handleBgUpload} />
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 relative z-10">
         
         {/* State 1: No Image - Upload View */}
         {!image && !isGenerating && (
@@ -134,12 +184,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
              </div>
 
              <label className="cursor-pointer group relative">
-                <div className="w-64 h-64 rounded-[3rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 transition-all hover:bg-white/[0.04] hover:border-gold animate-pulse-gold">
+                <div className="w-64 h-64 rounded-[3rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 transition-all hover:bg-white/[0.04] hover:border-gold animate-pulse-gold relative overflow-hidden">
+                   {/* Background dynamic effect */}
+                   <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                   
                    <div className="relative w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-gold border border-white/5 shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                       <div className="absolute inset-0 bg-gold rounded-2xl animate-ping opacity-10 group-hover:opacity-25"></div>
                       <ICONS.Plus />
                    </div>
-                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 group-hover:text-white transition-colors">Upload Room Image</span>
+                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 group-hover:text-white transition-colors relative z-10">Upload Room Image</span>
                 </div>
                 <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
              </label>
@@ -283,11 +336,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
 
         {/* State 3: Generating - Enhanced Progress View */}
         {isGenerating && (
-          <div className="max-w-6xl mx-auto py-12 flex flex-col items-center justify-center animate-fade-in">
+          <div className="max-w-6xl mx-auto py-12 flex flex-col items-center justify-center animate-fade-in relative">
             <div className="w-full aspect-[16/9] mb-16 rounded-[3.5rem] border border-white/10 bg-black overflow-hidden relative shadow-2xl flex">
                 
                 {/* Secondary Data Sidebar (Elite Touch) */}
-                <div className="w-48 bg-white/[0.02] border-r border-white/5 flex flex-col p-6 space-y-8 hidden md:flex">
+                <div className="w-48 bg-white/[0.02] border-r border-white/5 flex flex-col p-6 space-y-8 hidden md:flex relative z-10">
                    <div className="space-y-4">
                       <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Mem_Pool</span>
                       <div className="space-y-1">
@@ -334,7 +387,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
                         </div>
                     </div>
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30 p-10 flex flex-col">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30 p-10 flex flex-col relative z-10">
                        <div className="flex justify-between items-start border-b border-white/10 pb-6 mb-6">
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-3">
@@ -367,7 +420,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
                 </div>
             </div>
 
-            <div className="w-full text-center space-y-12">
+            <div className="w-full text-center space-y-12 relative z-10">
                <div className="space-y-4">
                  <h2 className="text-5xl md:text-6xl font-serif italic text-white animate-glitch key-[status]" key={status}>{status}</h2>
                  <p className="text-[11px] text-slate-500 font-bold uppercase tracking-[0.6em]">Awaiting final neural confirmation</p>

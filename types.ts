@@ -32,6 +32,23 @@ export interface User {
   name: string;
 }
 
+export interface PlacedFurniture {
+  id: string;
+  assetId: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
+  imageUrl: string;
+}
+
+export interface FurnitureAsset {
+  id: string;
+  name: string;
+  category: 'Seating' | 'Tables' | 'Decor' | 'Lighting';
+  imageUrl: string;
+}
+
 export interface DesignResult {
   id: string;
   originalImage: string;
@@ -45,6 +62,7 @@ export interface DesignResult {
   recommendations: string[];
   description: string;
   createdAt: string;
+  placedFurniture?: PlacedFurniture[];
 }
 
 export interface AuthState {
