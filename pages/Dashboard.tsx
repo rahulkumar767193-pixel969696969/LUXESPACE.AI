@@ -43,6 +43,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [genLogs, setGenLogs] = useState<string[]>([]);
+  
+  // Camera state
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
   const genIntervalRef = useRef<number | null>(null);
 
@@ -53,6 +60,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
   useEffect(() => {
     return () => {
       if (genIntervalRef.current) clearInterval(genIntervalRef.current);
+      stopCamera();
     };
   }, []);
 
@@ -60,7 +68,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setImage(reader.result as string);
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+        stopCamera();
+        setIsCameraActive(false);
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -71,6 +83,58 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
       const reader = new FileReader();
       reader.onloadend = () => setStudioBg(reader.result as string);
       reader.readAsDataURL(file);
+    }
+  };
+
+  // Camera logic
+  const startCamera = async () => {
+    setError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: facingMode } 
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setIsCameraActive(true);
+      setImage(null);
+    } catch (err) {
+      console.error("Camera Error:", err);
+      setError("Unable to access device camera. Please check permissions.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraActive(false);
+  };
+
+  const switchCamera = () => {
+    const newMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(newMode);
+    stopCamera();
+    // Use a small timeout to allow the track to fully stop before restarting
+    setTimeout(() => {
+      startCamera();
+    }, 100);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        setImage(dataUrl);
+        stopCamera();
+      }
     }
   };
 
@@ -175,39 +239,114 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 relative z-10">
         
-        {/* State 1: No Image - Upload View */}
-        {!image && !isGenerating && (
+        {/* State 1: No Image & Camera Inactive - Upload View */}
+        {!image && !isGenerating && !isCameraActive && (
           <div className="flex flex-col items-center justify-center min-h-[600px] animate-fade-in">
              <div className="text-center mb-16 max-w-2xl">
                 <h1 className="text-5xl md:text-6xl font-serif italic mb-6">Start your transformation.</h1>
-                <p className="text-slate-500 uppercase tracking-[0.3em] text-[10px] font-bold">Upload a photo of your existing space to begin the neural redesign.</p>
+                <p className="text-slate-500 uppercase tracking-[0.3em] text-[10px] font-bold">Upload a photo or capture your room directy to begin the neural redesign.</p>
              </div>
 
-             <label className="cursor-pointer group relative">
-                <div className="w-64 h-64 rounded-[3rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 transition-all hover:bg-white/[0.04] hover:border-gold animate-pulse-gold relative overflow-hidden">
-                   {/* Background dynamic effect */}
-                   <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                   
-                   <div className="relative w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-gold border border-white/5 shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                      <div className="absolute inset-0 bg-gold rounded-2xl animate-ping opacity-10 group-hover:opacity-25"></div>
-                      <ICONS.Plus />
-                   </div>
-                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 group-hover:text-white transition-colors relative z-10">Upload Room Image</span>
-                </div>
-                <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-             </label>
+             <div className="flex flex-col sm:flex-row gap-8 items-center">
+                <label className="cursor-pointer group relative">
+                  <div className="w-64 h-64 rounded-[3rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 transition-all hover:bg-white/[0.04] hover:border-gold animate-pulse-gold relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-gold border border-white/5 shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                        <div className="absolute inset-0 bg-gold rounded-2xl animate-ping opacity-10 group-hover:opacity-25"></div>
+                        <ICONS.Plus />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 group-hover:text-white transition-colors relative z-10">Upload Room Image</span>
+                  </div>
+                  <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                </label>
+
+                <div className="text-slate-700 font-bold uppercase tracking-widest text-xs">OR</div>
+
+                <button 
+                  onClick={startCamera}
+                  className="cursor-pointer group relative"
+                >
+                  <div className="w-64 h-64 rounded-[3rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 transition-all hover:bg-white/[0.04] hover:border-gold animate-pulse-gold relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="relative w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-gold border border-white/5 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                        <div className="absolute inset-0 bg-gold rounded-2xl animate-ping opacity-10 group-hover:opacity-25"></div>
+                        <ICONS.Camera />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 group-hover:text-white transition-colors relative z-10">Use Device Camera</span>
+                  </div>
+                </button>
+             </div>
+
+             {error && <p className="text-red-500 text-[10px] mt-8 font-bold uppercase tracking-widest bg-red-950/20 px-6 py-3 rounded-full border border-red-500/20">{error}</p>}
 
              <div className="mt-16 grid grid-cols-4 sm:grid-cols-8 gap-4 max-w-3xl w-full">
                 {SAMPLE_ROOMS.map((sample, i) => (
                   <button 
                     key={i} 
-                    onClick={() => setImage(sample.url)}
+                    onClick={() => { setImage(sample.url); setIsCameraActive(false); }}
                     className="aspect-square rounded-2xl overflow-hidden border border-white/5 hover:border-gold transition-all"
                   >
                     <img src={sample.url} className="w-full h-full object-cover grayscale opacity-30 hover:grayscale-0 hover:opacity-100 transition-all" alt="sample" />
                   </button>
                 ))}
              </div>
+          </div>
+        )}
+
+        {/* State Camera Active: Live Feed */}
+        {isCameraActive && !image && !isGenerating && (
+          <div className="flex flex-col items-center justify-center min-h-[600px] animate-fade-in w-full max-w-4xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-4xl font-serif italic text-white mb-4">Capture Your Space</h2>
+              <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-500">Position the room in center frame</span>
+            </div>
+
+            <div className="relative aspect-[4/3] md:aspect-[16/9] w-full bg-black rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl">
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-1000"
+              />
+              
+              {/* Camera Overlays */}
+              <div className="absolute inset-0 holographic-grid opacity-20 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none"></div>
+              
+              {/* Corner Accents */}
+              <div className="absolute top-8 left-8 w-12 h-12 border-t-2 border-l-2 border-gold/40 rounded-tl-xl"></div>
+              <div className="absolute top-8 right-8 w-12 h-12 border-t-2 border-r-2 border-gold/40 rounded-tr-xl"></div>
+              <div className="absolute bottom-8 left-8 w-12 h-12 border-b-2 border-l-2 border-gold/40 rounded-bl-xl"></div>
+              <div className="absolute bottom-8 right-8 w-12 h-12 border-b-2 border-r-2 border-gold/40 rounded-br-xl"></div>
+
+              {/* Camera Controls */}
+              <div className="absolute bottom-10 left-0 right-0 flex items-center justify-center gap-12 px-10">
+                <button 
+                  onClick={stopCamera}
+                  className="w-12 h-12 rounded-full glass-morphism border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all hover:bg-white/10"
+                >
+                  <ICONS.X />
+                </button>
+
+                <button 
+                  onClick={capturePhoto}
+                  className="w-24 h-24 rounded-full border-4 border-white flex items-center justify-center group relative shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+                >
+                  <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse group-hover:scale-110 transition-transform"></div>
+                  <div className="w-20 h-20 bg-white rounded-full transition-transform group-active:scale-90"></div>
+                </button>
+
+                <button 
+                  onClick={switchCamera}
+                  className="w-12 h-12 rounded-full glass-morphism border border-white/10 flex items-center justify-center text-slate-400 hover:text-gold transition-all hover:bg-white/10"
+                >
+                  <ICONS.Refresh />
+                </button>
+              </div>
+
+              {/* Horizontal Scan Overlay */}
+              <div className="absolute inset-x-0 h-[1px] bg-gold/30 shadow-[0_0_15px_rgba(212,175,55,0.4)] animate-scan pointer-events-none z-20"></div>
+            </div>
           </div>
         )}
 
@@ -218,12 +357,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
             <div className="lg:col-span-7 space-y-12">
               <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-serif italic text-gold">Design Settings</h2>
-                <button 
-                  onClick={() => setImage(null)}
-                  className="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
-                >
-                  Change Image
-                </button>
+                <div className="flex gap-6">
+                  <button 
+                    onClick={() => { setImage(null); setIsCameraActive(false); }}
+                    className="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
+                  >
+                    Upload New
+                  </button>
+                  <button 
+                    onClick={startCamera}
+                    className="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-gold transition-colors"
+                  >
+                    Open Camera
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
@@ -310,7 +457,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onResult }) => {
               <div className="pt-12">
                 <button
                   onClick={handleGenerate}
-                  className="w-full max-w-sm bg-white text-black py-6 rounded-full font-bold uppercase tracking-[0.4em] text-[10px] hover:bg-gold hover:text-white transition-all shadow-xl hover:scale-105 active:scale-95"
+                  className="w-full max-sm bg-white text-black py-6 rounded-full font-bold uppercase tracking-[0.4em] text-[10px] hover:bg-gold hover:text-white transition-all shadow-xl hover:scale-105 active:scale-95"
                 >
                   Generate Transformation
                 </button>
