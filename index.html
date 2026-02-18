@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuxeSpace AI | Elite Interior Transformation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+              extend: {
+                colors: {
+                  gold: '#D4AF37',
+                  obsidian: '#0A0A0A',
+                }
+              }
+            }
+        }
+    </script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0A0A0A;
+            color: #FFFFFF;
+        }
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            5% { opacity: 1; }
+            95% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes pulse-gold {
+            0%, 100% { 
+                border-color: rgba(212, 175, 55, 0.2); 
+                box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+                transform: scale(1);
+            }
+            50% { 
+                border-color: rgba(212, 175, 55, 0.6); 
+                box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
+                transform: scale(1.015);
+            }
+        }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes spin-reverse {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+        @keyframes grid-scroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+        @keyframes node-flicker {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        @keyframes glitch {
+          0% { transform: translate(0); text-shadow: 0 0 0 transparent; }
+          20% { transform: translate(-2px, 1px); text-shadow: 2px 0 red, -2px 0 blue; }
+          40% { transform: translate(2px, -1px); text-shadow: -2px 0 red, 2px 0 blue; }
+          60% { transform: translate(-1px, 0); text-shadow: 0 0 0 transparent; }
+          100% { transform: translate(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.6s ease-out forwards;
+        }
+        .animate-scan {
+            animation: scan 3s linear infinite;
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        .animate-pulse-gold {
+            animation: pulse-gold 4s infinite ease-in-out;
+        }
+        .animate-spin-slow {
+            animation: spin-slow 12s linear infinite;
+        }
+        .animate-spin-reverse {
+            animation: spin-reverse 8s linear infinite;
+        }
+        .animate-grid-scroll {
+            animation: grid-scroll 20s linear infinite;
+        }
+        .animate-node-flicker {
+            animation: node-flicker 2s infinite ease-in-out;
+        }
+        .animate-glitch {
+            animation: glitch 0.3s cubic-bezier(.25,.46,.45,.94) both;
+        }
+        .glass-morphism {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .holographic-grid {
+            background-image: linear-gradient(rgba(212, 175, 55, 0.08) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(212, 175, 55, 0.08) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0"
+  }
+}
+</script>
+</head>
+<body class="bg-obsidian text-slate-100 selection:bg-gold/30">
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+</body>
+</html>

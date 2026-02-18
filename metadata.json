@@ -1,0 +1,7 @@
+{
+  "name": "LuminaDesign AI - Interior Design SaaS",
+  "description": "A professional AI-powered interior design platform that reimagines your living spaces in seconds using advanced design simulations.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
